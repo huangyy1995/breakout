@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="description" content="Breakout - A classic brick-breaking game with neon visuals. Play on mobile or desktop!" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0a0a1a" />
+  <title>Breakout - Neon Bricks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/styles/index.css" />
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    <div id="ui-overlay">
+      <!-- Start Screen -->
+      <div id="start-screen" class="screen active">
+        <h1 class="game-title">BREAKOUT</h1>
+        <p class="game-subtitle">NEON BRICKS</p>
+        <button id="btn-start" class="neon-btn">START GAME</button>
+        <button id="btn-fullscreen" class="neon-btn secondary">⛶ FULLSCREEN</button>
+        <div class="controls-hint">
+          <p class="desktop-hint">← → Arrow Keys or Mouse</p>
+          <p class="mobile-hint">Touch & Drag to Move</p>
+        </div>
+      </div>
+      <!-- Pause Screen -->
+      <div id="pause-screen" class="screen">
+        <h2>PAUSED</h2>
+        <button id="btn-resume" class="neon-btn">RESUME</button>
+        <button id="btn-quit" class="neon-btn secondary">QUIT</button>
+      </div>
+      <!-- Game Over Screen -->
+      <div id="gameover-screen" class="screen">
+        <h2>GAME OVER</h2>
+        <p id="final-score" class="score-display">0</p>
+        <button id="btn-restart" class="neon-btn">PLAY AGAIN</button>
+      </div>
+      <!-- Level Complete Screen -->
+      <div id="level-complete-screen" class="screen">
+        <h2>LEVEL COMPLETE!</h2>
+        <p id="level-score" class="score-display">0</p>
+        <button id="btn-next-level" class="neon-btn">NEXT LEVEL</button>
+      </div>
+      <!-- HUD -->
+      <div id="hud">
+        <div class="hud-item" id="hud-score">
+          <span class="hud-label">SCORE</span>
+          <span class="hud-value" id="score-value">0</span>
+        </div>
+        <div class="hud-item" id="hud-level">
+          <span class="hud-label">LEVEL</span>
+          <span class="hud-value" id="level-value">1</span>
+        </div>
+        <div class="hud-item" id="hud-lives">
+          <span class="hud-label">LIVES</span>
+          <span class="hud-value" id="lives-value">●●●</span>
+        </div>
+        <button id="btn-pause" class="hud-btn">❚❚</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
