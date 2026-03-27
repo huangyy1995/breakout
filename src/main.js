@@ -9,6 +9,7 @@ import { Menu } from './ui/Menu.js';
 import { FullscreenManager } from './ui/FullscreenManager.js';
 import { AIController } from './ai/AIController.js';
 import { WebSocketBridge } from './ai/WebSocketBridge.js';
+import { SoundManager } from './ui/SoundManager.js';
 import './styles/index.css';
 
 // =========================================
@@ -24,6 +25,7 @@ const input = new InputManager(canvas);
 const particles = new ParticleSystem();
 const menu = new Menu();
 const fullscreen = new FullscreenManager();
+const sound = new SoundManager();
 const aiController = new AIController(game);
 const wsBridge = new WebSocketBridge(aiController);
 
@@ -96,23 +98,36 @@ game.onStateChange = (newState) => {
       break;
     case GameState.GAME_OVER:
       menu.showGameOver(game.score);
+      sound.playGameOver();
       break;
     case GameState.LEVEL_COMPLETE:
       menu.showLevelComplete(game.score);
+      sound.playLevelComplete();
       break;
   }
 };
 
 game.onBrickDestroyed = (brick) => {
   particles.spawnBrickBreak(brick);
+  sound.playBrickDestroy();
+};
+
+game.onBrickHit = () => {
+  sound.playBrickHit();
 };
 
 game.onPaddleHit = (x, y) => {
   particles.spawnPaddleHit(x, y);
+  sound.playPaddleHit();
+};
+
+game.onWallHit = () => {
+  sound.playWallHit();
 };
 
 game.onLifeLost = () => {
   menu.shakeScreen();
+  sound.playLifeLost();
 };
 
 game.onScoreChange = (score, level, lives) => {
@@ -120,8 +135,8 @@ game.onScoreChange = (score, level, lives) => {
 };
 
 game.onPowerUpCollected = (powerUp) => {
-  // Re-use paddle-hit particles as a quick visual burst at the paddle
   particles.spawnPaddleHit(powerUp.x, game.paddle.y);
+  sound.playPowerUp();
 };
 
 // Mobile cheat: rapidly tap upper-right corner 5× to skip the current level.

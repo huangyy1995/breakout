@@ -52,10 +52,12 @@ export class Game {
 
     // Callbacks
     this.onBrickDestroyed = null; // (brick) => {}
-    this.onPaddleHit = null; // (x, y) => {}
-    this.onLifeLost = null; // () => {}
-    this.onStateChange = null; // (newState) => {}
-    this.onScoreChange = null; // (score, level, lives) => {}
+    this.onBrickHit = null;       // (brick) => {} — hit but not destroyed
+    this.onPaddleHit = null;      // (x, y) => {}
+    this.onWallHit = null;        // () => {}
+    this.onLifeLost = null;       // () => {}
+    this.onStateChange = null;    // (newState) => {}
+    this.onScoreChange = null;    // (score, level, lives) => {}
     this.onPowerUpCollected = null; // (powerUp) => {}
 
     // AI mode
@@ -154,14 +156,16 @@ export class Game {
     }
 
     // --- Primary ball ---
-    this.ball.update(dt, this.paddle);
+    const ballWallHit = this.ball.update(dt, this.paddle);
+    if (ballWallHit && this.onWallHit) this.onWallHit();
 
     if (this.ball.launched && Physics.ballPaddleCollision(this.ball, this.paddle)) {
       this.combo = 0;
       if (this.onPaddleHit) this.onPaddleHit(this.ball.x, this.paddle.y);
     }
 
-    const destroyed = Physics.ballBrickCollisions(this.ball, this.brickGrid);
+    const { destroyed, hit } = Physics.ballBrickCollisions(this.ball, this.brickGrid);
+    if (hit && this.onBrickHit) this.onBrickHit(hit);
     for (const brick of destroyed) {
       this.combo++;
       this.score += 10 * this.combo;
@@ -173,14 +177,16 @@ export class Game {
     // --- Extra balls ---
     for (let i = this.extraBalls.length - 1; i >= 0; i--) {
       const eb = this.extraBalls[i];
-      eb.update(dt, this.paddle);
+      const ebWallHit = eb.update(dt, this.paddle);
+      if (ebWallHit && this.onWallHit) this.onWallHit();
 
       if (eb.launched && Physics.ballPaddleCollision(eb, this.paddle)) {
         this.combo = 0;
         if (this.onPaddleHit) this.onPaddleHit(eb.x, this.paddle.y);
       }
 
-      const extraDestroyed = Physics.ballBrickCollisions(eb, this.brickGrid);
+      const { destroyed: extraDestroyed, hit: extraHit } = Physics.ballBrickCollisions(eb, this.brickGrid);
+      if (extraHit && this.onBrickHit) this.onBrickHit(extraHit);
       for (const brick of extraDestroyed) {
         this.combo++;
         this.score += 10 * this.combo;
@@ -447,7 +453,7 @@ export class Game {
       this.combo = 0;
     }
 
-    const destroyed = Physics.ballBrickCollisions(this.ball, this.brickGrid);
+    const { destroyed } = Physics.ballBrickCollisions(this.ball, this.brickGrid);
     for (const brick of destroyed) {
       this.combo++;
       this.score += 10 * this.combo;

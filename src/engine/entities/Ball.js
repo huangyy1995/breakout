@@ -60,7 +60,7 @@ export class Ball {
   update(dt, paddle) {
     if (!this.launched) {
       this.attachToPaddle(paddle);
-      return;
+      return false;
     }
 
     // Store trail position
@@ -76,19 +76,24 @@ export class Ball {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
 
-    // Wall collisions (left, right, top)
+    // Wall collisions (left, right, top) — return true if any bounce occurred
+    let wallHit = false;
     if (this.x - this.radius <= 0) {
       this.x = this.radius;
       this.vx = Math.abs(this.vx);
+      wallHit = true;
     }
     if (this.x + this.radius >= this.canvasWidth) {
       this.x = this.canvasWidth - this.radius;
       this.vx = -Math.abs(this.vx);
+      wallHit = true;
     }
     if (this.y - this.radius <= 0) {
       this.y = this.radius;
       this.vy = Math.abs(this.vy);
+      wallHit = true;
     }
+    return wallHit;
   }
 
   /** Check if ball fell below the screen */

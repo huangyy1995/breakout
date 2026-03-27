@@ -40,13 +40,13 @@ export class Physics {
 
   /**
    * Check and resolve ball-brick collisions.
-   * Returns array of destroyed bricks for scoring/particles.
    * @param {import('./entities/Ball.js').Ball} ball
    * @param {import('./entities/Brick.js').BrickGrid} brickGrid
-   * @returns {import('./entities/Brick.js').Brick[]}
+   * @returns {{ destroyed: import('./entities/Brick.js').Brick[], hit: import('./entities/Brick.js').Brick|null }}
    */
   static ballBrickCollisions(ball, brickGrid) {
     const destroyed = [];
+    let hitBrick = null;
 
     for (const brick of brickGrid.bricks) {
       if (!brick.alive) continue;
@@ -80,6 +80,8 @@ export class Physics {
         const wasDestroyed = brick.hit();
         if (wasDestroyed) {
           destroyed.push(brick);
+        } else {
+          hitBrick = brick;
         }
 
         // Speed up slightly on each hit
@@ -89,6 +91,6 @@ export class Physics {
       }
     }
 
-    return destroyed;
+    return { destroyed, hit: hitBrick };
   }
 }
