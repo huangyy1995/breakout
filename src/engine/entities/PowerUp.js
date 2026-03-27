@@ -3,13 +3,21 @@
  */
 
 export const PowerUpType = {
-  MULTI_BALL: 'multi_ball',  // Spawn one additional ball
-  SPLIT_BALL: 'split_ball',  // Every active ball splits into two
+  MULTI_BALL:  'multi_ball',   // New ball launched from paddle
+  SPLIT_BALL:  'split_ball',   // Each active ball clones itself
+  EXTRA_LIFE:  'extra_life',   // Gain one life (up to maxLives)
 };
 
 export const POWERUP_STYLES = {
-  [PowerUpType.MULTI_BALL]: { fill: '#00ff88', glow: 'rgba(0, 255, 136, 0.9)', label: '+BALL' },
-  [PowerUpType.SPLIT_BALL]: { fill: '#a855f7', glow: 'rgba(168, 85, 247, 0.9)', label: 'SPLIT' },
+  [PowerUpType.MULTI_BALL]: {
+    fill: '#00f0ff', glow: 'rgba(0, 240, 255, 0.9)', label: '+BALL',
+  },
+  [PowerUpType.SPLIT_BALL]: {
+    fill: '#a855f7', glow: 'rgba(168, 85, 247, 0.9)', label: 'SPLIT',
+  },
+  [PowerUpType.EXTRA_LIFE]: {
+    fill: '#ff2d95', glow: 'rgba(255, 45, 149, 0.9)', label: '+LIFE',
+  },
 };
 
 export class PowerUp {
@@ -22,27 +30,21 @@ export class PowerUp {
     this.x = x;
     this.y = y;
     this.type = type;
-    this.width = 46;
-    this.height = 18;
-    this.speed = 115; // pixels per second (downward)
-    this.glowTime = 0; // for pulsing animation
+    this.width = 48;
+    this.height = 20;
+    this.speed = 110; // pixels per second downward
+    this.glowTime = 0;
   }
 
-  /** @param {number} dt */
   update(dt) {
     this.y += this.speed * dt;
     this.glowTime += dt;
   }
 
-  /** @param {number} canvasHeight */
   isBelowScreen(canvasHeight) {
     return this.y - this.height / 2 > canvasHeight;
   }
 
-  /**
-   * @param {import('./Paddle.js').Paddle} paddle
-   * @returns {boolean}
-   */
   collidesPaddle(paddle) {
     return (
       this.y + this.height / 2 >= paddle.y &&

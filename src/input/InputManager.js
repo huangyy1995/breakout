@@ -11,7 +11,10 @@ export class InputManager {
 
     // State
     this.direction = 0; // -1 to 1
-    this.targetX = null; // absolute canvas X for touch/mouse
+    this.targetX = null; // absolute canvas X for mouse only
+    this.deltaX   = 0;   // incremental X movement for touch (pixels, per frame consumed)
+    this._touchActive = false;
+    this._lastTouchX  = null; // previous touch X for delta calculation
     this.launchRequested = false;
     this.pauseRequested = false;
 
@@ -63,22 +66,31 @@ export class InputManager {
       }
     });
 
-    // Touch
+    // Touch — relative/delta control so the finger never needs to be on the paddle
     this.canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       this.inputMode = 'touch';
-      this._handleTouch(e.touches[0]);
+      const x = this._canvasX(e.touches[0]);
+      this._lastTouchX  = x;
+      this._touchActive = true;
+      this.deltaX = 0;
       this.launchRequested = true;
     }, { passive: false });
 
     this.canvas.addEventListener('touchmove', (e) => {
       e.preventDefault();
-      this._handleTouch(e.touches[0]);
+      if (!this._touchActive) return;
+      const x = this._canvasX(e.touches[0]);
+      if (this._lastTouchX !== null) {
+        this.deltaX += x - this._lastTouchX;
+      }
+      this._lastTouchX = x;
     }, { passive: false });
 
     this.canvas.addEventListener('touchend', (e) => {
       e.preventDefault();
-      this.targetX = null;
+      this._touchActive = false;
+      this._lastTouchX  = null;
     }, { passive: false });
 
     // Mouse
@@ -105,19 +117,20 @@ export class InputManager {
   }
 
   /**
-   * Convert touch to canvas coordinates.
-   * @param {Touch} touch
+   * Convert any pointer (Touch or MouseEvent) to logical canvas X.
+   * @param {Touch|MouseEvent} point
+   * @returns {number}
    */
-  _handleTouch(touch) {
+  _canvasX(point) {
     const rect = this.canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    const dpr  = window.devicePixelRatio || 1;
     const logicalWidth = this.canvas.width / dpr;
     const scaleX = logicalWidth / rect.width;
-    this.targetX = (touch.clientX - rect.left) * scaleX;
+    return (point.clientX - rect.left) * scaleX;
   }
 
   /**
-   * Detect taps in the upper-right corner for the skip-level cheat.
+   * Detect taps in the upper-left corner for the skip-level cheat.
    * Uses a window-level listener so it fires even when the HUD overlay is on top.
    * 5 taps within 1.5 s of each other triggers the cheat.
    * @param {Touch} touch
@@ -146,20 +159,28 @@ export class InputManager {
   }
 
   /**
-   * Convert mouse to canvas coordinates.
+   * Convert mouse event to logical canvas X and update targetX.
    * @param {MouseEvent} e
    */
   _handleMouse(e) {
-    const rect = this.canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    const logicalWidth = this.canvas.width / dpr;
-    const scaleX = logicalWidth / rect.width;
-    this.targetX = (e.clientX - rect.left) * scaleX;
+    this.targetX = this._canvasX(e);
   }
 
-  /** Whether input is position-based (touch/mouse) vs direction-based (keyboard) */
+  /** Whether input is position-based (mouse absolute) vs delta (touch) vs direction (keyboard) */
   get isPositionBased() {
-    return (this.inputMode === 'touch' || this.inputMode === 'mouse') && this.targetX !== null;
+    return this.inputMode === 'mouse' && this.targetX !== null;
+  }
+
+  /** Whether input is touch delta mode */
+  get isTouchDelta() {
+    return this.inputMode === 'touch';
+  }
+
+  /** Consume the accumulated touch delta (pixels) since last frame. */
+  consumeDelta() {
+    const v = this.deltaX;
+    this.deltaX = 0;
+    return v;
   }
 
   /** Consume launch request */
@@ -180,6 +201,9 @@ export class InputManager {
   reset() {
     this.direction = 0;
     this.targetX = null;
+    this.deltaX = 0;
+    this._touchActive = false;
+    this._lastTouchX  = null;
     this.launchRequested = false;
     this.pauseRequested = false;
     this._cornerTapCount = 0;

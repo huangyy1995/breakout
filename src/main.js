@@ -80,6 +80,28 @@ document.getElementById('btn-pause').addEventListener('click', () => {
   game.pause();
 });
 
+const btnMusic = document.getElementById('btn-toggle-music');
+const btnSfx   = document.getElementById('btn-toggle-sfx');
+
+btnMusic.addEventListener('click', () => {
+  const on = !sound.musicEnabled;
+  sound.setMusicEnabled(on);
+  if (on && game.state === GameState.PLAYING) sound.startMusic();
+  btnMusic.classList.toggle('hud-btn--off', !on);
+});
+
+btnSfx.addEventListener('click', () => {
+  const on = !sound.sfxEnabled;
+  sound.setSfxEnabled(on);
+  btnSfx.classList.toggle('hud-btn--off', !on);
+});
+
+// Touch bar — show when touch input is detected during play
+const touchBar = document.getElementById('touch-bar');
+canvas.addEventListener('touchstart', () => {
+  if (game.state === GameState.PLAYING) touchBar.classList.add('active');
+}, { passive: true });
+
 // =========================================
 // Game callbacks
 // =========================================
@@ -88,21 +110,30 @@ game.onStateChange = (newState) => {
   switch (newState) {
     case GameState.MENU:
       menu.showStart();
+      sound.stopMusic();
+      touchBar.classList.remove('active');
       break;
     case GameState.PLAYING:
       menu.showPlaying();
       menu.updateHUD(game.score, game.levelManager.getLevel(), game.lives);
+      sound.resumeMusic();
+      if (sound.musicEnabled) sound.startMusic();
       break;
     case GameState.PAUSED:
       menu.showPause();
+      sound.pauseMusic();
       break;
     case GameState.GAME_OVER:
       menu.showGameOver(game.score);
+      sound.stopMusic();
       sound.playGameOver();
+      touchBar.classList.remove('active');
       break;
     case GameState.LEVEL_COMPLETE:
       menu.showLevelComplete(game.score);
+      sound.stopMusic();
       sound.playLevelComplete();
+      touchBar.classList.remove('active');
       break;
   }
 };
@@ -136,7 +167,11 @@ game.onScoreChange = (score, level, lives) => {
 
 game.onPowerUpCollected = (powerUp) => {
   particles.spawnPaddleHit(powerUp.x, game.paddle.y);
-  sound.playPowerUp();
+  if (powerUp.type === 'extra_life') {
+    sound.playExtraLife();
+  } else {
+    sound.playPowerUp();
+  }
 };
 
 // Mobile cheat: rapidly tap upper-right corner 5× to skip the current level.

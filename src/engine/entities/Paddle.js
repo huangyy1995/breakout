@@ -17,9 +17,9 @@ export class Paddle {
     this.height = 14;
     this.cornerRadius = 4;
 
-    // Position
+    // Position — raised higher so the finger rests below the paddle on mobile
     this.x = (canvasWidth - this.width) / 2;
-    this.y = canvasHeight - 40;
+    this.y = canvasHeight - 110;
 
     // Movement
     this.speed = canvasWidth * 0.8; // pixels per second

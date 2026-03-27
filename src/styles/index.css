@@ -273,6 +273,12 @@ html, body {
   letter-spacing: 4px;
 }
 
+.hud-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .hud-btn {
   background: none;
   border: 1px solid var(--text-secondary);
@@ -282,11 +288,46 @@ html, body {
   padding: 6px 10px;
   cursor: pointer;
   transition: all 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .hud-btn:hover, .hud-btn:active {
   border-color: var(--neon-cyan);
   color: var(--neon-cyan);
+}
+
+.hud-btn--off {
+  opacity: 0.35;
+  text-decoration: line-through;
+}
+
+/* Touch zone guide bar */
+#touch-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 90px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(0,240,255,0.06), transparent);
+  border-top: 1px solid rgba(0,240,255,0.12);
+}
+
+#touch-bar.active {
+  display: flex;
+}
+
+#touch-bar .touch-hint {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: rgba(0, 240, 255, 0.35);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* =====================================================

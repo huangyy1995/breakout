@@ -135,7 +135,16 @@ export class Game {
 
     // Handle input
     if (input && !this.aiControlled) {
-      if (input.isPositionBased) {
+      if (input.isTouchDelta) {
+        // Relative/delta touch control: move paddle by accumulated drag distance
+        const dx = input.consumeDelta();
+        this.paddle.x = Math.max(0, Math.min(
+          this.canvasWidth - this.paddle.width,
+          this.paddle.x + dx
+        ));
+        this.paddle.targetX = this.paddle.x;
+        this.paddle.update(dt, false); // clamp + glow only
+      } else if (input.isPositionBased) {
         this.paddle.setTargetX(input.targetX);
         this.paddle.update(dt, true);
       } else {
@@ -267,7 +276,12 @@ export class Game {
    */
   _maybeDropPowerUp(brick) {
     if (Math.random() > POWERUP_DROP_CHANCE) return;
-    const type = Math.random() < 0.5 ? PowerUpType.MULTI_BALL : PowerUpType.SPLIT_BALL;
+    const r = Math.random();
+    const type = r < 0.34
+      ? PowerUpType.MULTI_BALL
+      : r < 0.67
+        ? PowerUpType.SPLIT_BALL
+        : PowerUpType.EXTRA_LIFE;
     this.powerUps.push(new PowerUp(brick.x + brick.width / 2, brick.y + brick.height / 2, type));
   }
 
@@ -279,18 +293,24 @@ export class Game {
     const activeBalls = [this.ball, ...this.extraBalls].filter(b => b.launched);
 
     if (type === PowerUpType.MULTI_BALL) {
+      // Spawn a new ball from the paddle (not from current ball position)
       if (this.extraBalls.length >= MAX_EXTRA_BALLS) return;
-      const source = activeBalls[0] || this.ball;
-      const nb = this._spawnExtraBall(source, 'cyan');
-      // Spread angle differs from source
-      const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.8;
+      const nb = new Ball({ canvasWidth: this.canvasWidth, canvasHeight: this.canvasHeight });
+      nb.baseSpeed = this.ball.baseSpeed;
+      nb.maxSpeed  = this.ball.maxSpeed;
+      nb.speed     = this.ball.speed || this.ball.baseSpeed;
+      nb.x = this.paddle.centerX;
+      nb.y = this.paddle.y - nb.radius - 2;
+      nb.glowColor = '#00f0ff';
+      nb.midColor  = '#00c8ff';
+      nb.launched  = true;
+      const angle  = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.7;
       nb.vx = Math.cos(angle) * nb.speed;
       nb.vy = -Math.abs(Math.sin(angle) * nb.speed);
       this.extraBalls.push(nb);
 
     } else if (type === PowerUpType.SPLIT_BALL) {
       if (activeBalls.length === 0) {
-        // Fallback when ball hasn't launched yet
         this._collectPowerUp(PowerUpType.MULTI_BALL);
         return;
       }
@@ -301,6 +321,14 @@ export class Game {
         nb.vx = -b.vx; // mirror horizontally
         nb.vy = b.vy;
         this.extraBalls.push(nb);
+      }
+
+    } else if (type === PowerUpType.EXTRA_LIFE) {
+      if (this.lives < this.maxLives) {
+        this.lives++;
+        if (this.onScoreChange) {
+          this.onScoreChange(this.score, this.levelManager.getLevel(), this.lives);
+        }
       }
     }
   }
@@ -353,7 +381,7 @@ export class Game {
     this.paddle.canvasWidth = newWidth;
     this.paddle.canvasHeight = newHeight;
     this.paddle.x *= scaleX;
-    this.paddle.y = newHeight - 40;
+    this.paddle.y = newHeight - 110;
     this.paddle.speed = newWidth * 0.8;
 
     // Scale primary ball

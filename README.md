@@ -1,6 +1,6 @@
 # Breakout Game - Neon Bricks
 
-A modern, mobile-friendly HTML5 Canvas Breakout game featuring a neon-glow visual design, 50 dynamic levels, and built-in Gym-like AI interfaces for Deep Learning and Reinforcement Learning (RL) agents.
+A modern, mobile-friendly HTML5 Canvas Breakout game featuring neon-glow visuals, 50 dynamic levels, power-up system, procedural audio, and built-in Gym-like AI interfaces for Reinforcement Learning agents.
 
 🎮 **Live Demo:** [https://breakout-game-282666957438.asia-east1.run.app](https://breakout-game-282666957438.asia-east1.run.app)
 
@@ -8,47 +8,93 @@ A modern, mobile-friendly HTML5 Canvas Breakout game featuring a neon-glow visua
 
 ## 🌟 Key Features
 
-- **Premium Visuals:** Neon-glow aesthetics, animated backgrounds, multi-hit brick HP, gradient particles, and indestructible metallic obstacles.
-- **Mobile First:** Unified `InputManager` supports desktop keyboard tracking, mouse dragging, and mobile touch. Includes a native Fullscreen API wrapper & portrait orientation lock.
-- **50-Level Progression:** Dynamic difficulty spanning 50 levels. Featuring 10 unique brick patterns (Diamonds, Checkerboards, Pyramids, U/V shapes) and challenging multi-hit/invincible boss levels.
-- **Gym-Style AI Interface:** Completely decoupled game state logic. Exposes normalized properties (paddle coords, ball coords/velocities, brick matrix) entirely between `[0, 1]` for pristine tensor ingestion.
-- **Containerized:** Multi-stage Dockerfile packaging Vite + Node build into a lightweight Nginx Alpine container. Ready for Google Cloud Run (Serverless).
+- **Premium Visuals:** Neon-glow aesthetics, animated grid background, gradient particles, multi-hit brick HP indicators, and indestructible metallic obstacles.
+- **Mobile First:** Relative touch control (delta-based dragging), raised paddle position for unobstructed view, touch zone guide bar. Desktop supports keyboard and mouse.
+- **50-Level Progression:** 10 unique brick patterns (Diamonds, Checkerboards, Pyramids, U/V shapes, Boss blocks) with scaling difficulty — more columns, more rows, higher HP, smaller paddle, faster ball.
+- **Power-Up System:** Three collectible drops from destroyed bricks:
+  - 🔵 **+BALL** — launches a new ball from the paddle
+  - 🟣 **SPLIT** — every active ball clones itself (mirrored direction)
+  - 🔴 **+LIFE** — gain one extra life
+- **Multi-Ball:** Up to 8 balls on screen simultaneously. When the primary ball falls but extras exist, an extra is promoted — no life lost.
+- **Procedural Audio:** All sound effects and background music generated via Web Audio API (zero audio files). Pentatonic ambient BGM with independent music/SFX toggle buttons.
+- **Mobile Cheat:** Rapidly tap the upper-left corner 5 times to skip the current level (hidden cheat code).
+- **Gym-Style AI Interface:** Normalized game state, `reset()` / `step(action)` API, WebSocket bridge for Python RL agents.
+- **Containerized:** Multi-stage Docker build (Vite + Nginx Alpine), ready for Google Cloud Run.
 
 ---
 
 ## 🚀 Local Development
 
-The project uses Vanilla JS + Vite, so there's no bulky frameworks.
+Vanilla JS + Vite — no frameworks.
 
 ```bash
 # Install dependencies
 npm install
 
-# Start development server with Hot Module Replacement (HMR)
+# Start development server (HMR)
 npm run dev
 
 # Build for production
 npm run build
-```
-Once the dev server is running, visit `http://localhost:3000`.
 
-### Debugging Cheat Codes
-- **Press `N`** during gameplay to instantly clear all bricks and skip to the next level.
+# Preview production build
+npm run preview
+```
+
+Dev server runs at `http://localhost:3000`.
+
+### Cheat Codes
+- **Press `N`** (desktop) — instantly clear all bricks and skip to next level.
+- **Tap upper-left corner 5× rapidly** (mobile) — same effect.
+
+---
+
+## 📁 Project Structure
+
+```
+breakout/
+├── index.html                     # Single-page entry point
+├── vite.config.js                 # Vite configuration
+├── package.json                   # Dependencies (only vite)
+├── Dockerfile / docker-compose.yml / nginx.conf / deploy.sh
+│
+└── src/
+    ├── main.js                    # Bootstrap, game loop, event wiring
+    ├── engine/
+    │   ├── Game.js                # Core game state machine, update loop
+    │   ├── Physics.js             # Ball↔Paddle and Ball↔Brick collision
+    │   ├── levels/
+    │   │   └── LevelManager.js    # Level progression & difficulty curves
+    │   └── entities/
+    │       ├── Ball.js            # Ball movement, wall bounce, trail
+    │       ├── Brick.js           # Brick + BrickGrid (10 patterns)
+    │       ├── Paddle.js          # Paddle (keyboard/touch/AI control)
+    │       └── PowerUp.js         # Falling power-up items
+    ├── input/
+    │   └── InputManager.js        # Unified keyboard/touch/mouse input
+    ├── ui/
+    │   ├── Renderer.js            # Canvas rendering (neon aesthetic)
+    │   ├── Menu.js                # UI screen/HUD management
+    │   ├── ParticleSystem.js      # Brick break & paddle hit particles
+    │   ├── SoundManager.js        # Web Audio API SFX + BGM
+    │   └── FullscreenManager.js   # Fullscreen/orientation handling
+    ├── ai/
+    │   ├── AIController.js        # AI interface wrapper
+    │   └── WebSocketBridge.js     # Remote AI via WebSocket
+    └── styles/
+        └── index.css              # All styling (screens, HUD, animations)
+```
 
 ---
 
 ## 🐋 Docker & Deployment
 
-The codebase is pre-configured to be deployed via Docker or directly mapped to Google Cloud Run.
-
-**Run via Docker Compose:**
 ```bash
+# Run locally via Docker Compose
 docker-compose up -d
-```
-Then visit `http://localhost:8080`.
+# → http://localhost:8080
 
-**Deploy to Google GCP Cloud Run (Source-based):**
-```bash
+# Deploy to Google Cloud Run
 gcloud run deploy breakout-game \
   --source . \
   --region asia-east1 \
@@ -60,42 +106,48 @@ gcloud run deploy breakout-game \
 
 ## 🧠 AI / Reinforcement Learning Interface
 
-This game engine is built specifically with future AI integration in mind. 
-It supports both direct browser console injection and a `WebSocketBridge` for Python scripts.
+Open the browser console:
 
-Open your browser console and type:
 ```javascript
 const ai = window.__BREAKOUT_AI;
 
-// 1. Get current state (Returns normalized JSON dict)
-console.log(ai.getState());
+// Gym-like Reset → returns initial state
+const s0 = ai.reset();
 
-// 2. Gym-like Reset
-const initialState = ai.reset();
+// Gym-like Step → returns { state, reward, done, info }
+const result = ai.step({ type: 'position', position: 0.5 });
 
-// 3. Gym-like Step
-// Action type: 'move' (direction: -1 to 1) or 'position' (position: 0 to 1) 
-// Returns { state, reward, done, info }
-const result = ai.step({ type: 'move', direction: 0.8 });
-console.log(result.reward, result.done);
+// Configure for headless training
+ai.configure({ renderEnabled: false, gameSpeed: 10 });
 ```
+
+**Action types:**
+- `{ type: 'move', direction: -1..1 }` — relative paddle movement
+- `{ type: 'position', position: 0..1 }` — absolute paddle position
+- `{ type: 'launch' }` — launch ball
+
+**State:** All positions/velocities normalized to `[0, 1]`. Includes paddle, ball, brick grid, score, lives, level.
+
+**Rewards:** +1 per brick destroyed, +50 level complete, −5 life lost.
 
 ---
 
-## 🔮 Future Plan & Roadmap
+## 🔮 Roadmap
 
-As this repository evolves, the following features are planned for sequential implementation:
+### Phase 1: Game Polish ✅
+- [x] Sound effects (paddle, brick, wall, power-up, life lost, level complete, game over)
+- [x] Background music (procedural pentatonic ambient)
+- [x] Power-up system (+BALL, SPLIT, +LIFE)
+- [x] Multi-ball support
+- [x] Mobile touch optimization (delta control, raised paddle, touch bar)
+- [x] Music/SFX toggle buttons
+- [x] Hidden mobile cheat code
 
-### Phase 1: Game Polish
-- [ ] Add sound effects for paddle hits, brick breaks, and level complete.
-- [ ] Add glowing temporary power-ups (e.g., elongated paddle, multiple balls).
-
-### Phase 2: Python RL Integration (Deep Learning)
-- [ ] Establish a standalone Python WebSocket server (`ai-server` in docker-compose).
-- [ ] Write a PyTorch-based Deep Q-Network (DQN) or Proximal Policy Optimization (PPO) agent.
-- [ ] Train the AI to play Breakout by piping `window.__BREAKOUT_AI` steps directly into the Python training loop.
-- [ ] Allow tweaking rendering speed (`ai.configure({ renderEnabled: false, gameSpeed: 10 })`) for headless high-speed training.
+### Phase 2: Python RL Integration
+- [ ] Python WebSocket server for training loop
+- [ ] DQN / PPO agent implementation (PyTorch)
+- [ ] Headless high-speed training mode
 
 ### Phase 3: Leaderboards & Cloud
-- [ ] Integrate Firebase or Google Cloud SQL to track player high scores versus the AI model's high score.
-- [ ] Setup CI/CD pipelines in Google Cloud Build upon Git push.
+- [ ] Firebase / Cloud SQL high-score tracking
+- [ ] CI/CD via Cloud Build
