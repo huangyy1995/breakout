@@ -145,7 +145,7 @@ ai.configure({ renderEnabled: false, gameSpeed: 10 });
 
 ### Phase 2: Python RL Integration
 - [ ] Python WebSocket server for training loop
-- [ ] DQN / PPO agent implementation (PyTorch)
+- [ ] DQN / PPO / GRPO agent implementation (PyTorch)
 - [ ] Headless high-speed training mode
 
 ### Phase 3: Leaderboards & Cloud
