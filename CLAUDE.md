@@ -153,3 +153,58 @@ Touch uses **relative/delta** control (not absolute position), so the paddle doe
 - **AudioContext autoplay policy.** Browsers require a user gesture before audio plays. `SoundManager._resume()` is called before every sound to handle this. `startMusic()` should only be called after user interaction (it is — via game state change triggered by button click).
 - **Ball.update() return value.** Returns `true` if a wall bounce occurred (used for wall-hit sound). Don't change the return to void.
 - **Physics.ballBrickCollisions() return shape.** Returns `{ destroyed, hit }` object, not a plain array. Both `Game.update()` and `Game.stepForAI()` destructure this.
+
+---
+
+## AI Training Server (`ai-server/`)
+
+### Overview
+Python-based RL training system that connects to the game via WebSocket. Three algorithms: DQN, PPO, GRPO.
+
+### Commands
+```bash
+cd ai-server/
+pip install -r requirements.txt    # torch, gymnasium, websockets, numpy, tensorboard, wandb
+python ws_server.py                # Start WebSocket relay on :8765
+python train.py --agent dqn --episodes 5000 --headless
+python evaluate.py --agent dqn --checkpoint checkpoints/dqn_best.pt
+python play.py --agent dqn --checkpoint checkpoints/dqn_best.pt
+```
+
+### Architecture
+```
+Browser → WebSocketBridge.js → ws_server.py (relay) → ws_env.py → agent
+```
+- `ws_env.py` wraps the game as a Gymnasium env (sync WS, `step()`/`reset()`)
+- `state_processor.py` converts raw JSON to 233-dim float32 vector
+- `agents/` contains DQN, PPO, GRPO — all extend `agents/base.py`
+- `utils/logger.py` unifies TensorBoard + W&B + console logging
+
+### Key Files
+| File | What it does |
+|------|-------------|
+| `ws_server.py` | WebSocket relay: routes messages between browser and Python trainer |
+| `ws_env.py` | `BreakoutWebSocketEnv(gymnasium.Env)` — frame skip, reward shaping, timeout |
+| `state_processor.py` | `process_state(dict) -> ndarray(233,)` — paddle/ball/grid/meta |
+| `agents/dqn_agent.py` | DQN with epsilon-greedy, replay buffer, target network |
+| `agents/ppo_agent.py` | PPO with GAE, continuous action (tanh-squashed Gaussian) |
+| `agents/grpo_agent.py` | GRPO — G trajectories per state, group-relative advantages, no critic |
+| `networks/mlp.py` | `QNetwork`, `PolicyNetwork`, `ActorCriticNetwork` |
+| `utils/config.py` | `DQNConfig`, `PPOConfig`, `GRPOConfig` dataclasses |
+| `utils/logger.py` | `Logger` class with `ConsoleWriter`, `TensorBoardWriter`, `WandbWriter` |
+| `train.py` | CLI entry point — `train_dqn()`, `train_ppo()`, `train_grpo()` loops |
+
+### Observation Space (233-dim)
+```
+[0:2]     Paddle (x, width)
+[2:7]     Ball (x, y, vx, vy, launched)
+[7:231]   Brick grid (14x16 HP values, 0=empty)
+[231:233] Meta (lives_ratio, bricks_remaining_ratio)
+```
+
+### Caveats
+- `ws_env.py` uses synchronous `websockets.sync.client` — one WS message per `step()` call
+- PPO uses continuous actions `Box(-1,1)` mapped to paddle direction; DQN/GRPO use `Discrete(4)`
+- GRPO calls `env.reset()` for each of G trajectories — relies on game resetting to deterministic level 1
+- Checkpoints in `ai-server/checkpoints/`, TensorBoard logs in `ai-server/runs/` — both gitignored
+- The design doc is at `docs/phase2-rl-design.md` — refer to it for full algorithm details

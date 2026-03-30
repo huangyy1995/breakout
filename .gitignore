@@ -4,3 +4,12 @@ dist/
 *.local
 .env
 .env.*
+
+# AI server
+ai-server/checkpoints/
+ai-server/runs/
+ai-server/wandb/
+ai-server/__pycache__/
+ai-server/**/__pycache__/
+*.pyc
+*.pyo
