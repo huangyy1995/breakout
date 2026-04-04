@@ -2,7 +2,7 @@
 
 A modern, mobile-friendly HTML5 Canvas Breakout game featuring neon-glow visuals, 50 dynamic levels, power-up system, procedural audio, and built-in Gym-like AI interfaces for Reinforcement Learning agents.
 
-🎮 **Live Demo:** [https://breakout-game-282666957438.asia-east1.run.app](https://breakout-game-282666957438.asia-east1.run.app)
+🎮 **Live Demo:** [https://breakout.xingyao.info](https://breakout.xingyao.info/)
 
 ---
 
